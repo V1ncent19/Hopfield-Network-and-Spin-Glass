@@ -11,7 +11,7 @@ Spin glass model starts from Ising model to study the magnetic properties of fer
 
 ![](images/2024-05-12-18-49-41.png)
 
-In statistical mechanics, to study the properties of a system, one needs to start from the energy function of states of a system. In the Ising model, we mainly focus on two components of the energy function: the interaction energy between spins, and the external magnetic field. The energy function of the Ising model is thus given by:
+In statistical mechanics, to study the properties of a system, one needs to start from the energy of states of a system. In the Ising model, we mainly focus on two components of the energy function: the interaction energy between spins, and the external magnetic field. The energy function of the Ising model is thus given by:
 
 $$
 \begin{aligned}
@@ -30,13 +30,13 @@ But in our case, **Hopfield Network**, we use the most general form, the $w_{ij}
 
 ### Statistical Mechanics, Boltzmann Distribution and Numerical Methods
 
-In canonical ensemble, the probability of a state $s$ is given by the Boltzmann distribution:
+In canonical ensemble, the probability of a state $s$ is given by the Boltzmann distribution. We put a short derivation in the Appendix, here we just state the result:
 $$
 \begin{aligned}
     p(s) = \frac{1}{Z}e^{-\beta E(s)},\quad Z = \sum_s e^{-\beta E(s)}
 \end{aligned}
 $$ 
-in which the normalization factor $Z$ is called the partition function, and $\beta = 1/k_BT$ is the inverse temperature. If you are really interested in how physicists derive this formula, you can refer to any statistical mechanics textbook, here we just take it as a fact. Since there is always thermal fluctuation in the system, the system will not stay in the state with the lowest energy, but will fluctuate around the equilibrium state, and Boltzmann distribution tells us *at equilibrium, the probability that a system stays in a state*.
+in which the normalization factor $Z$ is called the partition function, and $\beta = 1/k_BT$ is the inverse temperature. The reason why there is a distribution is that: since there is always thermal fluctuation in the system, the system will not stay at *the* state with the lowest energy, but will fluctuate around it, which is what we call 'reaching an equilibrium', and Boltzmann distribution tells us *at equilibrium, the probability that a system stays in a state*.
 
 Now if we examine the probability expression, we notice that when $\beta \to \infty$, i.e. when the temperature $T\to 0$, the probability of a state $s$ is dominated by the states with the lowest energy. That means, the system would tend to stay in the state with the lowest energy, especially at low temperature. 
 
@@ -159,12 +159,56 @@ $$
     \dfrac{\partial^{} \mathcal{L} }{\partial w^{} }\approx& \langle v_0h_0 \rangle - \langle v_1 h_1 \rangle
 \end{aligned}
 $$ 
-In practice, the latter one works better. Intuitively, we focus on lowering the 'confabulations' of the network. To do so, only one step of Gibbs sampling is needed to get the 'confabulations' of the network, we don't need to wait for the system to reach thermal equilibrium. **Possible Worry**: there may also be some states with high probability but being far from any memorized states, so when using the shortcut, we may not be able to lower the energy of these states.
+In practice, the latter one works better. Intuitively, we focus on lowering the 'confabulations' of the network. To do so, only one step of Gibbs sampling is needed to get the 'confabulations' of the network, we don't need to wait for the system to reach thermal equilibrium. This trick is called **Contrastive Divergence**. 
+*Possible Worry*: there may also be some states with high probability but being far from any memorized states, so when using the shortcut, we may not be able to lower the energy of these states.
 
 
 
 
-## Appendix: Gibbs Sampling
+# References
+
+TBW
+
+# Appendix
+
+## Canonical Ensemble and Boltzmann Distribution
+
+In statistical mechanics, we try to construct the model from microscopic states and finally get the macroscopic properties of the system. We may only know that *on large scale, the energy of the system is conserved*, say, being $\mathcal{E}$, but there could be lots of microscopic states that have the same total energy $\mathcal{E}$. To get the probability for staying on each state, we introduce the concept of *canonical ensemble*. The idea is actually simple: instead of considering the probability of each state, we consider we have a huge number of replicas of the system, and we count the number of replicas that stay in each state to 'estimate' the probability of each state. This is called a 'ensemble' of systems.
+
+Say now we know how to descript the *exact* energy of a microscopic state $s$ by $E(s)$, and we have a ensemble consisting of $M$ replicas. Denote for each state $s$, the number of replicas that stay in state $s$ is $M(s)$, then the probability of staying in state $s$ is just $M(s)/M$. To get this $M(\, \cdot \, )$ we need to how the ensemble would set on each state while keeping the total energy $\mathcal{E}$ fixed. So we apply the basic assumption of statistical mechanics: *they just have the same probability*. So $s_\mathrm{ ensemble }=[s_1,\ldots,s_M]$ has equally probability on each setting of $[s_1,\ldots,s_M]\in \mathcal{S}^M$, thus the most possible $\{M(s)\}$ is the one that gives the maximum number of possible configurations of $s_\mathrm{ ensemble }$ while keeping the total energy $\mathcal{E}$ fixed, i.e.
+$$
+\begin{aligned}
+    M(\, \cdot \, )=&\arg\max \log \binom{M}{M(s_1),\ldots,M(s_{\left\vert \mathcal{S} \right\vert })} -\beta \sum_{s}M(s)E(s)\\
+    =&\arg\max \log \dfrac{ M! }{ \prod_{s}M(s)! } -\beta \sum_{s}M(s)E(s)\\
+    =& \arg\max \log M!-\sum_{s}\log M(s) -\beta\sum_{s}M(s)E(s)\\
+\end{aligned}
+$$ 
+note that we only care about the case when $M\to\infty$, so we can use the Stirling approximation to get the derivatives:
+$$
+\begin{aligned}
+    &\dfrac{\partial^{}  }{\partial M(s)^{} } \log M!-\sum_{s}\log M(s) -\beta\sum_{s}M(s)E(s)\\
+    \approx & \dfrac{\partial^{}  }{\partial M(s)^{} } \log \left(\dfrac{ M }{ e } \right)^M - \sum_s \log \left(\dfrac{ M(s) }{ e } \right)^{M(s)}+\lambda \sum_{s}M(s)E(s)\\
+    =& \log M - \log M(s) -\beta E(s) + \mathrm{const}\\
+    =& 0\\
+     \Rightarrow p(s)=&\dfrac{ M(s) }{ M }=\dfrac{ e^{-\beta E(s)} }{ Z } ,\qquad Z = \sum_s e^{-\beta E(s)}
+\end{aligned}
+$$ 
+which is the Boltzmann distribution on canonical ensemble. We can get some interesting results from this distribution, such as:
+
+-   **Expectation of Energy**: $\langle E \rangle = -\dfrac{ \partial^{} \log Z }{ \partial \beta }$.
+-   **Entropy**: $S = \log Z + \beta \langle E \rangle$, from which we can see that we have the relation $\langle E \rangle = \dfrac{S}{\beta }-\log Z$.
+-   **Helmholtz Free Energy**: which is defined as $F = \langle E \rangle - TS= \langle E \rangle - \dfrac{ S }{ \beta  } $, can be computed as $F = -\dfrac{ 1 }{ \beta }\log Z$.
+
+**Note on Helmhotz Free Energy**: in thermal physics, the Helmholtz free energy is defined as the [Legendre transformation](https://en.wikipedia.org/wiki/Legendre_transformation) of average energy:
+$$
+\begin{aligned}
+    F = \langle E \rangle - S\dfrac{\partial^{} \langle E \rangle }{\partial S^{} }= \langle E \rangle - \dfrac{ S }{ \beta  } 
+\end{aligned}
+$$ 
+But in statistical mechanics, we actually first define the partition function $Z$ and then define the Helmholtz free energy as $F = -\dfrac{ 1 }{ \beta }\log Z$, and then notice that it coincides with the definition in thermal physics.
+
+
+## Gibbs Sampling
 
 Now we wanna sample from a distribution $p(s)=\dfrac{1}{Z}e^{-\beta E(s)}$ but we cannot access the normalization constant $Z$. The idea of Gibbs sampling is to sample from the conditional distribution of each dimension given the other dimensions.
 
